@@ -7,7 +7,7 @@ import time
 import requests
 import numpy as np
 
-# Hardcoded password protection (no secrets file needed)
+# Improved password protection
 def check_password():
     """Returns `True` if the user had the correct password."""
     
@@ -19,28 +19,39 @@ def check_password():
         "yuvraj": "password123"
     }
 
+    # Initialize session state
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if (st.session_state["username"] in users
-            and st.session_state["password"] == users[st.session_state["username"]]):
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Don't store password
-            del st.session_state["username"]
+        if ("username" in st.session_state and "password" in st.session_state):
+            if (st.session_state["username"] in users
+                and st.session_state["password"] == users[st.session_state["username"]]):
+                st.session_state["password_correct"] = True
+                # Don't store the password
+                if "password" in st.session_state:
+                    del st.session_state["password"]
+            else:
+                st.session_state["password_correct"] = False
         else:
             st.session_state["password_correct"] = False
 
-    if "password_correct" not in st.session_state:
-        # First run, show inputs for username + password.
+    # Show login form if not authenticated
+    if not st.session_state["password_correct"]:
         st.title("🔥 HOT Metal Tracking Dashboard - Login")
-        st.text_input("Username", on_change=password_entered, key="username")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input + error.
-        st.title("🔥 HOT Metal Tracking Dashboard - Login")
-        st.text_input("Username", on_change=password_entered, key="username")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 User not known or password incorrect")
+        
+        # Use form to prevent reruns on every keystroke
+        with st.form("login_form"):
+            username = st.text_input("Username", key="username_input")
+            password = st.text_input("Password", type="password", key="password_input")
+            submitted = st.form_submit_button("Login")
+            
+            if submitted:
+                st.session_state["username"] = username
+                st.session_state["password"] = password
+                password_entered()
+        
         return False
     else:
         # Password correct.
@@ -56,6 +67,21 @@ st.set_page_config(
     page_icon="🔥",
     layout="wide"
 )
+
+# Add logout button in sidebar
+if st.sidebar.button("🚪 Logout"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
+
+# Rest of your existing code continues here...
+
+
+
+
+
+
+
 
 # Rest of your existing code continues here...
 # [ALL YOUR EXISTING FUNCTIONS AND MAIN CODE REMAIN THE SAME]
